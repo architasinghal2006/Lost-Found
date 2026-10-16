@@ -1,0 +1,15 @@
+services:
+  app:
+    build:
+      context: .
+      args:
+        WITH_CLIP: "0"   # set to "1" to build with real CLIP, then set LF_USE_CLIP below to "1"
+    ports:
+      - "8000:8000"
+    environment:
+      LF_USE_CLIP: "0"
+    volumes:
+      - lf-instance:/app/instance
+
+volumes:
+  lf-instance:

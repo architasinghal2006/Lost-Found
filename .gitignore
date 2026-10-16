@@ -8,3 +8,4 @@ data/uploads/
 results/
 .venv/
 .claude/
+instance/
