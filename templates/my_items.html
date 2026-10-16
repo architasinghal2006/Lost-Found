@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Items I found</h1>
+<p><a class="button" href="/items/new">Report a found item</a></p>
+<ul class="list">
+{% for item in items %}
+  <li><a href="/items/{{ item.id }}"><img src="/uploads/{{ item.photo_path }}" alt=""> {{ item.public_description }}</a>
+    <span class="badge">{{ "Open" if item.status == "active" else REASON_TEXT[item.closure_reason] }}</span></li>
+{% else %}
+  <li class="muted">You have not reported anything yet.</li>
+{% endfor %}
+</ul>
+{% endblock %}

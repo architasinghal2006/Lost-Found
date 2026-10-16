@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Create an account</h1>
+<form method="post" action="/register" class="card narrow">
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <label>Username <input name="username" autocomplete="username" required></label>
+  <label>Password (6+ characters) <input type="password" name="password" autocomplete="new-password" required></label>
+  <button>Register</button>
+</form>
+{% endblock %}

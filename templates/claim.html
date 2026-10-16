@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<article class="card item">
+  <img class="photo small" src="/uploads/{{ item.photo_path }}" alt="Photo of the claimed item">
+  <div>
+    <p class="muted"><a href="/items/{{ item.id }}">{{ item.public_description }}</a></p>
+    <h1>{{ claim.title }}</h1>
+    <p>{{ claim.next_step }}</p>
+    {% if claim.withdrawn %}<p class="muted">You withdrew this claim.</p>{% endif %}
+  </div>
+</article>
+
+{% if claim.state == "PENDING" %}
+<form method="post" action="/claims/{{ claim.id }}/start" class="card">
+  <p>We will ask questions about details that were never published. Answer from memory; small spelling slips are fine.</p>
+  <button>Start verification</button>
+</form>
+{% endif %}
+
+{% if claim.question %}
+<form method="post" action="/claims/{{ claim.id }}/answer" class="card">
+  <p class="question">{{ claim.question.question_text }}</p>
+  <input type="hidden" name="challenge_id" value="{{ claim.question.id }}">
+  <input name="answer" autocomplete="off" autofocus placeholder="Your answer">
+  <button>Submit answer</button>
+</form>
+{% endif %}
+
+{% if claim.state == "VERIFIED" %}
+<section class="card">
+  <h2>Handover</h2>
+  <p>You: {{ "confirmed ✔" if claim.claimant_confirmed else "not yet confirmed" }} ·
+     Finder: {{ "confirmed ✔" if claim.finder_confirmed else "not yet confirmed" }}</p>
+  {% if not claim.claimant_confirmed %}
+  <form method="post" action="/claims/{{ claim.id }}/confirm">
+    <label class="check"><input type="checkbox" name="confirm" value="yes" required> I have received my item</label>
+    <button>Confirm handover</button>
+  </form>
+  {% elif not claim.finder_confirmed %}
+    <p class="notice">Waiting for the finder to confirm.</p>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if claim.state in ("PENDING", "VERIFYING") %}
+<form method="post" action="/claims/{{ claim.id }}/withdraw" class="card">
+  <label class="check"><input type="checkbox" name="confirm" value="yes" required> Withdraw my claim (it cannot be reopened)</label>
+  <button class="danger">Withdraw claim</button>
+</form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block content %}
+<article class="card item">
+  <img class="photo" src="/uploads/{{ item.photo_path }}" alt="Photo of found item">
+  <div>
+    <h1>{{ item.public_description }}</h1>
+    <p class="muted">{{ item.category }} · found in {{ item.zone }} on {{ item.date_found }}</p>
+    {% if item.status == "active" %}
+      <span class="badge ok">Open</span>
+    {% else %}
+      <span class="badge closed">Closed: {{ REASON_TEXT[item.closure_reason] }}</span>
+    {% endif %}
+
+    {% if not is_staff and item.status == "active" %}
+      {% if not user %}
+        <p><a href="/login?next=/items/{{ item.id }}">Log in</a> to claim this item.</p>
+      {% elif my_claim %}
+        <p><a class="button" href="/claims/{{ my_claim.id }}">View my claim</a></p>
+      {% else %}
+        <form method="post" action="/items/{{ item.id }}/claim">
+          <p class="muted">Is this yours? You will be asked a few questions only the owner can answer.</p>
+          <button>Claim this item</button>
+        </form>
+      {% endif %}
+    {% endif %}
+  </div>
+</article>
+
+{% if is_staff %}
+<section class="card" id="claims">
+  <h2>Claims on this item</h2>
+  {% if budget %}
+    <p class="muted">Item disclosure budget: {{ budget.consumed_total }} of {{ budget.allowance }} used
+      {% if budget.frozen %}(frozen at {{ budget.frozen_value }}){% endif %}.</p>
+  {% endif %}
+  {% for c in staff_claims %}
+    <div class="claim">
+      <p><strong>Claim #{{ c.id }}</strong> by <span class="actor">{{ c.claimant }}</span> · <code>{{ c.state }}</code>
+        {% if c.closure_cause %}({{ c.closure_cause }}){% endif %}
+        {% if c.score is not none %} · score {{ "%.2f"|format(c.score) }}{% endif %}</p>
+      {% if c.questions %}
+      <table>
+        <tr><th>Question asked</th><th>Cost</th><th>Similarity</th><th>Match</th></tr>
+        {% for q in c.questions %}
+        <tr><td>{{ q.question_text }}</td><td>{{ q.disclosure_cost }}</td>
+            <td>{% if q.similarity is not none %}{{ "%.2f"|format(q.similarity) }}{% else %}unanswered{% endif %}</td>
+            <td>{% if q.matched %}✔{% elif q.matched is not none %}✘{% endif %}</td></tr>
+        {% endfor %}
+      </table>
+      {% endif %}
+      {% if c.state == "VERIFIED" %}
+        <p>Handover: claimant {{ "confirmed ✔" if c.claimant_confirmed else "not yet confirmed" }} ·
+           finder {{ "confirmed ✔" if c.finder_confirmed_by else "not yet confirmed" }}</p>
+        {% if not c.finder_confirmed_by %}
+        <form method="post" action="/claims/{{ c.id }}/confirm">
+          <label class="check"><input type="checkbox" name="confirm" value="yes" required>
+            I confirm the item was handed to this claimant{% if not is_finder %} (on the finder's behalf){% endif %}</label>
+          <button>Confirm handover (finder side)</button>
+        </form>
+        {% endif %}
+      {% endif %}
+    </div>
+  {% else %}
+    <p class="muted">No claims yet.</p>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if is_finder and attributes %}
+<section class="card private">
+  <h2>🔒 Private details</h2>
+  <p class="muted">For privacy, the questions and answers cannot be shown again. You can replace a detail until a question has been asked from it.</p>
+  <ul>
+  {% for a in attributes %}
+    <li>Detail #{{ a.id }} (weight {{ a.weight }}):
+      {% if a.locked %}<strong>locked</strong> (already asked)
+      {% elif item.status == "active" %}
+        <details><summary>Replace</summary>
+          <form method="post" action="/items/{{ item.id }}/attributes/{{ a.id }}" class="attr">
+            <input name="label" placeholder="New question" required>
+            <input name="answer" placeholder="New answer" autocomplete="off" required>
+            <select name="weight">{% for w in range(1, 6) %}<option value="{{ w }}">weight {{ w }}</option>{% endfor %}</select>
+            <button>Replace</button>
+          </form>
+        </details>
+      {% endif %}
+    </li>
+  {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if is_staff and item.status == "active" %}
+<section class="card">
+  <h2>Withdraw this item</h2>
+  <form method="post" action="/items/{{ item.id }}/close">
+    <label>Reason code
+      <select name="reason" required>
+        <option value="">Choose…</option>
+        <option value="WITHDRAWN">WITHDRAWN: the finder takes the listing down</option>
+      </select>
+    </label>
+    <label class="check"><input type="checkbox" name="confirm" value="yes" required> I understand this closes the item for everyone</label>
+    <button class="danger">Close item</button>
+  </form>
+</section>
+{% endif %}
+
+{% if user and user.role == "admin" and item.status == "resolved" %}
+<section class="card">
+  <h2>Reopen (administrator)</h2>
+  <form method="post" action="/items/{{ item.id }}/reopen">
+    <label>Justification <input name="justification" required></label>
+    <button>Reopen item</button>
+  </form>
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>Timeline</h2>
+  <ol class="timeline">
+  {% for e in timeline %}
+    <li><time>{{ e.created_at }}</time> <strong>{{ EVENT_TEXT.get(e.event_type, e.event_type) }}</strong>
+      by <span class="actor">{{ e.actor }}</span>
+      {% if e.event_type == "item_closed" %}: {{ REASON_TEXT[e.detail.split()[-1]] }}{% endif %}
+      {% if is_staff and e.detail %}<div class="muted">{{ e.detail }}</div>{% endif %}</li>
+  {% endfor %}
+  </ol>
+</section>
+{% endblock %}

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Lost &amp; Found{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/">Lost &amp; Found</a>
+  <nav>
+    <a href="/">Search</a>
+    {% if user %}
+      <a href="/items/new">Report item</a>
+      <a href="/my/items">My items</a>
+      <a href="/my/claims">My claims</a>
+      {% if user.role == "admin" %}<a href="/admin">Admin</a>{% endif %}
+      <form method="post" action="/logout" class="inline">
+        <button class="link">Log out ({{ user.username }})</button>
+      </form>
+    {% else %}
+      <a href="/login">Log in</a>
+      <a href="/register">Register</a>
+    {% endif %}
+  </nav>
+</header>
+<main>
+{% block content %}{% endblock %}
+</main>
+</body>
+</html>

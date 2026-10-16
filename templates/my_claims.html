@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>My claims</h1>
+<ul class="list">
+{% for c in claims %}
+  <li><a href="/claims/{{ c.id }}"><img src="/uploads/{{ c.photo_path }}" alt=""> {{ c.public_description }}</a>
+    <span class="badge">{{ c.title }}</span></li>
+{% else %}
+  <li class="muted">You have not claimed anything yet.</li>
+{% endfor %}
+</ul>
+{% endblock %}

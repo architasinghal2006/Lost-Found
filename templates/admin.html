@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Admin</h1>
+<p class="muted">You see verdicts, similarity scores and budgets. Private answers are never shown, here or anywhere.</p>
+
+<section class="card">
+  <h2>Waiting for a decision</h2>
+  {% for c in queue %}
+    <div class="claim">
+      <p><strong>Claim #{{ c.id }}</strong> on <a href="/items/{{ c.item_id }}">{{ c.public_description }}</a>
+        by <span class="actor">{{ c.claimant }}</span> · <code>{{ c.state }}</code>
+        {% if c.score is not none %} · score {{ "%.2f"|format(c.score) }}{% endif %}</p>
+      <form method="post" action="/admin/claims/{{ c.id }}/decide" class="row">
+        <input name="justification" placeholder="Justification (required)" required>
+        <button name="decision" value="approve">Approve</button>
+        <button name="decision" value="reject" class="danger">Reject</button>
+      </form>
+    </div>
+  {% else %}
+    <p class="muted">Nothing waiting.</p>
+  {% endfor %}
+</section>
+
+<section class="card">
+  <h2>All claims</h2>
+  <div class="scroll">
+  <table>
+    <tr><th>#</th><th>Item</th><th>Claimant</th><th>State</th><th>Score</th><th>Spent</th><th>Questions (cost · similarity)</th><th>Handover</th></tr>
+    {% for c in claims %}
+    <tr>
+      <td>{{ c.id }}</td>
+      <td><a href="/items/{{ c.item_id }}">{{ c.public_description }}</a></td>
+      <td><span class="actor">{{ c.claimant }}</span></td>
+      <td><code>{{ c.state }}</code>{% if c.closure_cause %}<br><small>{{ c.closure_cause }}</small>{% endif %}</td>
+      <td>{% if c.score is not none %}{{ "%.2f"|format(c.score) }}{% endif %}</td>
+      <td>{{ c.claim_spent }}</td>
+      <td>{% for q in c.questions %}
+            <div>{{ q.question_text }} · {{ q.disclosure_cost }} ·
+              {% if q.similarity is not none %}{{ "%.2f"|format(q.similarity) }} {{ "✔" if q.matched else "✘" }}{% else %}unanswered{% endif %}</div>
+          {% endfor %}</td>
+      <td>{% if c.state == "VERIFIED" %}
+            claimant {{ "✔" if c.claimant_confirmed else "…" }} / finder {{ "✔" if c.finder_confirmed_by else "…" }}
+            {% if not c.finder_confirmed_by %}
+            <form method="post" action="/claims/{{ c.id }}/confirm">
+              <label class="check"><input type="checkbox" name="confirm" value="yes" required> on finder's behalf</label>
+              <button>Confirm</button>
+            </form>
+            {% endif %}
+          {% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Items and budgets</h2>
+  <form method="post" action="/admin/sweep"><button>Run expiry sweep now</button>
+    {% if swept %}<span class="muted">{{ swept }} item(s) expired.</span>{% endif %}</form>
+  <div class="scroll">
+  <table>
+    <tr><th>#</th><th>Item</th><th>Status</th><th>Budget used</th><th>Frozen at</th></tr>
+    {% for i in items %}
+    <tr><td>{{ i.id }}</td><td><a href="/items/{{ i.id }}">{{ i.public_description }}</a></td>
+        <td>{{ "Open" if i.status == "active" else REASON_TEXT[i.closure_reason] }}</td>
+        <td>{{ i.consumed_total }} / {{ i.allowance }}</td>
+        <td>{% if i.frozen %}{{ i.frozen_value }}{% endif %}</td></tr>
+    {% endfor %}
+  </table>
+  </div>
+</section>
+{% endblock %}

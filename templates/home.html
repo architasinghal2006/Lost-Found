@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Lost something?</h1>
+<p class="muted">Describe it in your own words. We match your description against finders' photos.</p>
+
+<form method="get" action="/" class="card search">
+  <label>Describe your item
+    <input name="q" value="{{ q }}" placeholder="e.g. silver keyring with a little enamel bird" required>
+  </label>
+  <div class="row">
+    <label>Category
+      <select name="category">
+        <option value="">Any</option>
+        {% for c in CATEGORIES %}<option value="{{ c }}" {% if c == category %}selected{% endif %}>{{ c }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Where lost
+      <select name="zone">
+        <option value="">Any</option>
+        {% for z in ZONES %}<option value="{{ z }}" {% if z == zone %}selected{% endif %}>{{ z }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Date lost
+      <input type="date" name="date_lost" value="{{ date_lost }}">
+    </label>
+    <label>Re-ranking
+      <select name="rerank">
+        <option value="on" {% if rerank != "off" %}selected{% endif %}>On (photo + where/when)</option>
+        <option value="off" {% if rerank == "off" %}selected{% endif %}>Off (photo only)</option>
+      </select>
+    </label>
+  </div>
+  <button>Search</button>
+</form>
+
+{% if q %}
+  <h2>Best matches</h2>
+  {% if low_confidence %}
+    <p class="notice">Nothing matches strongly. These are the closest items, but none may be yours.</p>
+  {% endif %}
+  <ol class="results">
+  {% for item in results %}
+    <li class="result">
+      <span class="rank">#{{ loop.index }}</span>
+      <a href="/items/{{ item.id }}"><img src="/uploads/{{ item.photo_path }}" alt="Photo of found item"></a>
+      <div>
+        <a href="/items/{{ item.id }}"><strong>{{ item.public_description }}</strong></a>
+        <div class="muted">{{ item.category }} · {{ item.zone }} · found {{ item.date_found }}</div>
+      </div>
+    </li>
+  {% else %}
+    <li>No active items.</li>
+  {% endfor %}
+  </ol>
+{% endif %}
+
+<h2>Recently found</h2>
+<div class="grid">
+{% for item in recent %}
+  <a class="tile" href="/items/{{ item.id }}">
+    <img src="/uploads/{{ item.photo_path }}" alt="Photo of found item">
+    <span>{{ item.category }} · {{ item.zone }}</span>
+  </a>
+{% endfor %}
+</div>
+{% endblock %}

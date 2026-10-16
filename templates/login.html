@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Log in</h1>
+<form method="post" action="/login" class="card narrow">
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <input type="hidden" name="next" value="{{ next }}">
+  <label>Username <input name="username" autocomplete="username" required></label>
+  <label>Password <input type="password" name="password" autocomplete="current-password" required></label>
+  <button>Log in</button>
+  <p class="muted">No account? <a href="/register">Register</a></p>
+</form>
+{% endblock %}

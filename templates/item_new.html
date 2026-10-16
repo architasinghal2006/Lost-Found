@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Report a found item</h1>
+<form method="post" action="/items" enctype="multipart/form-data">
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+  <section class="card">
+    <h2>Public details</h2>
+    <p class="muted">Everyone can see these. Keep them general: enough to recognise the item, not enough to prove you own it.</p>
+    <label>Photo (on a phone this opens the camera)
+      <input type="file" name="photo" accept="image/*" capture="environment" required>
+    </label>
+    <label>Short public description
+      <input name="description" value="{{ form.description or '' }}" placeholder="e.g. black water bottle" required>
+    </label>
+    <div class="row">
+      <label>Category
+        <select name="category" required>
+          <option value="">Choose…</option>
+          {% for c in CATEGORIES %}<option value="{{ c }}" {% if c == form.category %}selected{% endif %}>{{ c }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Where found
+        <select name="zone" required>
+          <option value="">Choose…</option>
+          {% for z in ZONES %}<option value="{{ z }}" {% if z == form.zone %}selected{% endif %}>{{ z }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Date found
+        <input type="date" name="date_found" value="{{ form.date_found or '' }}" required>
+      </label>
+    </div>
+  </section>
+
+  <section class="card private">
+    <h2>🔒 Private details (never shown to anyone)</h2>
+    <p>These are the questions we ask anyone who claims the item. Only the real owner should know the answers.
+       <strong>Write them carefully: if an answer is wrong, the real owner may fail verification.</strong>
+       Once submitted, nobody can read them back, not even you or an administrator.</p>
+    <p class="muted">Weight 1-5: how strongly a correct answer proves ownership. Higher weights are asked first and cost more of the
+       item's disclosure budget, because asking them reveals more.</p>
+    {% for i in range(4) %}
+    <div class="attr">
+      <input name="label" placeholder="Question, e.g. What is engraved on the back?">
+      <input name="answer" placeholder="Answer" autocomplete="off">
+      <select name="weight" aria-label="weight">
+        {% for w in range(1, 6) %}<option value="{{ w }}" {% if w == 3 %}selected{% endif %}>weight {{ w }}</option>{% endfor %}
+      </select>
+    </div>
+    {% endfor %}
+  </section>
+
+  <button>Register item</button>
+</form>
+{% endblock %}
