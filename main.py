@@ -60,11 +60,11 @@ async def lifespan(app):
     db.init_db(conn)
     expired = items.expire_items(conn)  # scheduler check at startup
     conn.close()
-    embedder.get_embedder()  # load the model now, not on the first request
+    model = embedder.get_embedder()  # load the model now, not on the first request
     port = os.environ.get("LF_PORT", "8000")
-    print(f"\n  Lost & Found is running ({embedder.get_embedder().name} embedder). Expired at startup: {expired}")
-    print(f"  On this laptop:  http://localhost:{port}")
-    print(f"  On your phone:   http://{lan_address()}:{port}  (same Wi-Fi or hotspot)\n")
+    print(f"\n  Lost & Found is running ({model.name} embedder). Expired at startup: {expired}", flush=True)
+    print(f"  On this laptop:  http://localhost:{port}", flush=True)
+    print(f"  On your phone:   http://{lan_address()}:{port}  (same Wi-Fi or hotspot)\n", flush=True)
     yield
 
 
