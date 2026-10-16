@@ -82,6 +82,12 @@ def test_date_outside_window_gives_no_bonus():
     assert search.metadata_bonus(item, None, None, "2026-08-01") == 0  # too long ago
 
 
+def test_items_without_metadata_get_no_bonus():
+    # distractor images in the scale ablation have no category, zone or date
+    item = {"category": None, "zone": None, "date_found": None}
+    assert search.metadata_bonus(item, "bottle", "gym", "2026-10-01") == 0
+
+
 def test_identical_inputs_give_identical_rankings(conn, stub, corpus):
     # FR-044
     first, _ = search.search(conn, stub, "black bottle", category="bottle")

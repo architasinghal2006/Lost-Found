@@ -1,0 +1,20 @@
+query_text,correct_item_id,category,zone,date_lost
+black water bottle with a dent near the lid,1,bottle,library,2026-10-09
+black metal bottle with a loop to carry it,2,bottle,gym,2026-10-11
+my black steel bottle with a silver cap,3,bottle,cafeteria,2026-09-19
+black water bottle,1,bottle,library,2026-10-09
+black water bottle,2,bottle,gym,2026-10-11
+black water bottle,3,bottle,cafeteria,2026-09-18
+silver keyring with a little enamel bird on it,4,keys,car_park,2026-10-10
+bunch of keys with a bird charm,4,,,
+dark blue umbrella that folds,5,umbrella,lecture_hall,2026-10-08
+red rucksack with a laptop compartment,6,bag,hostel,2026-10-07
+white over ear sony headphones,7,electronics,library,2026-10-12
+earphones that go over your ears,7,electronics,,
+id card in a green lanyard,8,id_card,cafeteria,2026-10-14
+brown spectacles case,9,glasses,lecture_hall,2026-10-06
+spectacle pouch,9,,,
+grey scientific calculator,10,stationery,lab_block,2026-10-11
+black leather wallet,11,wallet,sports_ground,2026-10-04
+grey hoodie I left at the gym,12,clothing,gym,2026-10-05
+my sweatshirt with a hood,12,,,

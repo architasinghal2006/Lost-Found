@@ -17,7 +17,7 @@ def metadata_bonus(item, category, zone, date_lost):
         bonus += CATEGORY_BONUS
     if zone and item["zone"] == zone:
         bonus += ZONE_BONUS
-    if date_lost:
+    if date_lost and item["date_found"]:
         days_after_loss = (date.fromisoformat(item["date_found"]) - date.fromisoformat(date_lost)).days
         if 0 <= days_after_loss <= DATE_WINDOW_DAYS:
             bonus += DATE_BONUS
