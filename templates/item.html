@@ -1,130 +1,173 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
 {% block content %}
-<article class="card item">
-  <img class="photo" src="/uploads/{{ item.photo_path }}" alt="Photo of found item">
-  <div>
-    <h1>{{ item.public_description }}</h1>
-    <p class="muted">{{ item.category }} · found in {{ item.zone }} on {{ item.date_found }}</p>
-    {% if item.status == "active" %}
-      <span class="badge ok">Open</span>
-    {% else %}
-      <span class="badge closed">Closed: {{ REASON_TEXT[item.closure_reason] }}</span>
-    {% endif %}
+<div class="page-head">
+  <a class="icon-btn" href="/" aria-label="Back to home">{{ ui.icon("chevron-left") }}</a>
+  <span class="muted">Found item</span>
+</div>
+
+<div class="split">
+  <div class="split-main">
+    <article class="card hero">
+      <img class="photo" src="/uploads/{{ item.photo_path }}" alt="Photo of found item">
+      <h1>{{ item.public_description }}</h1>
+      {{ ui.item_status(item) }}
+    </article>
+
+    <div class="stats">
+      <div class="stat">{{ ui.cat_tile(item.category) }}<span class="muted">Category</span><strong>{{ ui.nice(item.category) }}</strong></div>
+      <div class="stat"><span class="tile-icon peach">{{ ui.icon("map-pin") }}</span><span class="muted">Zone</span><strong>{{ ui.nice(item.zone) }}</strong></div>
+      <div class="stat"><span class="tile-icon blue">{{ ui.icon("calendar") }}</span><span class="muted">Date found</span><strong>{{ item.date_found }}</strong></div>
+      <div class="stat">
+        {% if item.status == "active" %}<span class="tile-icon mint">{{ ui.icon("circle-check") }}</span><span class="muted">Status</span><strong>Open</strong>
+        {% else %}<span class="tile-icon grey">{{ ui.icon("archive") }}</span><span class="muted">Status</span><strong>{{ REASON_TEXT[item.closure_reason] }}</strong>{% endif %}
+      </div>
+    </div>
 
     {% if not is_staff and item.status == "active" %}
+    <section class="card action">
       {% if not user %}
-        <p><a href="/login?next=/items/{{ item.id }}">Log in</a> to claim this item.</p>
+        <p>Is this yours? <a href="/login?next=/items/{{ item.id }}">Log in</a> to claim it.</p>
+        <a class="button wide" href="/login?next=/items/{{ item.id }}">{{ ui.icon("log-in") }}Log in to claim</a>
       {% elif my_claim %}
-        <p><a class="button" href="/claims/{{ my_claim.id }}">View my claim</a></p>
+        <p class="muted">You have already claimed this item.</p>
+        <a class="button wide" href="/claims/{{ my_claim.id }}">View my claim {{ ui.icon("chevron-right") }}</a>
       {% else %}
         <form method="post" action="/items/{{ item.id }}/claim">
           <p class="muted">Is this yours? You will be asked a few questions only the owner can answer.</p>
-          <button>Claim this item</button>
+          <button class="wide">{{ ui.icon("hand") }}Claim this item</button>
         </form>
       {% endif %}
+    </section>
+    {% endif %}
+
+    {% if is_staff and budget %}
+    <section class="card gauge-card">
+      {{ ui.gauge(budget.consumed_total, budget.allowance) }}
+      <div>
+        <h2>Disclosure budget</h2>
+        <p class="muted">{{ budget.consumed_total }} of {{ budget.allowance }} used. Every question asked spends some of it, and it is never refunded.
+          {% if budget.frozen %}Frozen at {{ budget.frozen_value }}.{% endif %}</p>
+        <p class="muted small">{{ ui.icon("eye-off") }} Only the finder and administrators see this.</p>
+      </div>
+    </section>
     {% endif %}
   </div>
-</article>
 
-{% if is_staff %}
-<section class="card" id="claims">
-  <h2>Claims on this item</h2>
-  {% if budget %}
-    <p class="muted">Item disclosure budget: {{ budget.consumed_total }} of {{ budget.allowance }} used
-      {% if budget.frozen %}(frozen at {{ budget.frozen_value }}){% endif %}.</p>
-  {% endif %}
-  {% for c in staff_claims %}
-    <div class="claim">
-      <p><strong>Claim #{{ c.id }}</strong> by <span class="actor">{{ c.claimant }}</span> · <code>{{ c.state }}</code>
-        {% if c.closure_cause %}({{ c.closure_cause }}){% endif %}
-        {% if c.score is not none %} · score {{ "%.2f"|format(c.score) }}{% endif %}</p>
-      {% if c.questions %}
-      <table>
-        <tr><th>Question asked</th><th>Cost</th><th>Similarity</th><th>Match</th></tr>
-        {% for q in c.questions %}
-        <tr><td>{{ q.question_text }}</td><td>{{ q.disclosure_cost }}</td>
-            <td>{% if q.similarity is not none %}{{ "%.2f"|format(q.similarity) }}{% else %}unanswered{% endif %}</td>
-            <td>{% if q.matched %}✔{% elif q.matched is not none %}✘{% endif %}</td></tr>
-        {% endfor %}
-      </table>
-      {% endif %}
-      {% if c.state == "VERIFIED" %}
-        <p>Handover: claimant {{ "confirmed ✔" if c.claimant_confirmed else "not yet confirmed" }} ·
-           finder {{ "confirmed ✔" if c.finder_confirmed_by else "not yet confirmed" }}</p>
-        {% if not c.finder_confirmed_by %}
-        <form method="post" action="/claims/{{ c.id }}/confirm">
-          <label class="check"><input type="checkbox" name="confirm" value="yes" required>
-            I confirm the item was handed to this claimant{% if not is_finder %} (on the finder's behalf){% endif %}</label>
-          <button>Confirm handover (finder side)</button>
-        </form>
-        {% endif %}
-      {% endif %}
-    </div>
-  {% else %}
-    <p class="muted">No claims yet.</p>
-  {% endfor %}
-</section>
-{% endif %}
+  <div class="split-side">
+    {% if is_staff %}
+    <section class="card" id="claims">
+      <h2>Claims on this item</h2>
+      {% for c in staff_claims %}
+        <div class="claim">
+          <div class="claim-top">
+            {{ ui.state_tile(c.state) }}
+            <div class="lrow-text">
+              <strong>Claim #{{ c.id }}</strong>
+              <span class="muted">by <span class="actor">{{ c.claimant }}</span>{% if c.score is not none %} · score {{ "%.2f"|format(c.score) }}{% endif %}</span>
+            </div>
+            {{ ui.state_badge(c.state, c.closure_cause == "CLAIMANT_WITHDRAWN") }}
+          </div>
+          <p class="codes"><code>{{ c.state }}</code>{% if c.closure_cause %} <code>{{ c.closure_cause }}</code>{% endif %}</p>
+          {% if c.questions %}
+          <div class="scroll">
+          <table>
+            <tr><th>Question asked</th><th>Cost</th><th>Similarity</th><th>Match</th></tr>
+            {% for q in c.questions %}
+            <tr><td>{{ q.question_text }}</td><td>{{ q.disclosure_cost }}</td>
+                <td>{% if q.similarity is not none %}{{ "%.2f"|format(q.similarity) }}{% else %}<span class="muted">unanswered</span>{% endif %}</td>
+                <td>{% if q.matched %}<span class="yes" title="Match">{{ ui.icon("check") }}<span class="visually-hidden">match</span></span>
+                    {% elif q.matched is not none %}<span class="no" title="No match">{{ ui.icon("x") }}<span class="visually-hidden">no match</span></span>{% endif %}</td></tr>
+            {% endfor %}
+          </table>
+          </div>
+          {% endif %}
+          {% if c.state == "VERIFIED" %}
+            <div class="handover">
+              <span class="hand {{ 'done' if c.claimant_confirmed }}">{{ ui.icon("circle-check" if c.claimant_confirmed else "clock") }}Claimant {{ "confirmed" if c.claimant_confirmed else "not yet confirmed" }}</span>
+              <span class="hand {{ 'done' if c.finder_confirmed_by }}">{{ ui.icon("circle-check" if c.finder_confirmed_by else "clock") }}Finder {{ "confirmed" if c.finder_confirmed_by else "not yet confirmed" }}</span>
+            </div>
+            {% if not c.finder_confirmed_by %}
+            <form method="post" action="/claims/{{ c.id }}/confirm">
+              <label class="check"><input type="checkbox" name="confirm" value="yes" required>
+                I confirm the item was handed to this claimant{% if not is_finder %} (on the finder's behalf){% endif %}</label>
+              <button>{{ ui.icon("handshake") }}Confirm handover (finder side)</button>
+            </form>
+            {% endif %}
+          {% endif %}
+        </div>
+      {% else %}
+        {{ ui.empty("inbox", "No claims yet", "When someone claims this item, it shows up here.") }}
+      {% endfor %}
+    </section>
+    {% endif %}
 
-{% if is_finder and attributes %}
-<section class="card private">
-  <h2>🔒 Private details</h2>
-  <p class="muted">For privacy, the questions and answers cannot be shown again. You can replace a detail until a question has been asked from it.</p>
-  <ul>
-  {% for a in attributes %}
-    <li>Detail #{{ a.id }} (weight {{ a.weight }}):
-      {% if a.locked %}<strong>locked</strong> (already asked)
-      {% elif item.status == "active" %}
-        <details><summary>Replace</summary>
-          <form method="post" action="/items/{{ item.id }}/attributes/{{ a.id }}" class="attr">
-            <input name="label" placeholder="New question" required>
-            <input name="answer" placeholder="New answer" autocomplete="off" required>
-            <select name="weight">{% for w in range(1, 6) %}<option value="{{ w }}">weight {{ w }}</option>{% endfor %}</select>
-            <button>Replace</button>
-          </form>
-        </details>
-      {% endif %}
-    </li>
-  {% endfor %}
-  </ul>
-</section>
-{% endif %}
+    {% if is_finder and attributes %}
+    <section class="card private">
+      <h2>{{ ui.icon("lock") }} Private details</h2>
+      <p class="muted">For privacy, the questions and answers cannot be shown again. You can replace a detail until a question has been asked from it.</p>
+      <ul class="attr-list">
+      {% for a in attributes %}
+        <li>
+          <span class="attr-name"><span class="num">{{ loop.index }}</span>Detail #{{ a.id }} <span class="muted">· weight {{ a.weight }}</span></span>
+          {% if a.locked %}<span class="pill grey">{{ ui.icon("lock") }}Locked, already asked</span>
+          {% elif item.status == "active" %}
+            <details><summary>{{ ui.icon("pencil") }}Replace</summary>
+              <form method="post" action="/items/{{ item.id }}/attributes/{{ a.id }}" class="attr">
+                <input name="label" placeholder="New question" required>
+                <input name="answer" placeholder="New answer" autocomplete="off" required>
+                <select name="weight" aria-label="Weight">{% for w in range(1, 6) %}<option value="{{ w }}">weight {{ w }}</option>{% endfor %}</select>
+                <button>Replace</button>
+              </form>
+            </details>
+          {% endif %}
+        </li>
+      {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
 
-{% if is_staff and item.status == "active" %}
-<section class="card">
-  <h2>Withdraw this item</h2>
-  <form method="post" action="/items/{{ item.id }}/close">
-    <label>Reason code
-      <select name="reason" required>
-        <option value="">Choose…</option>
-        <option value="WITHDRAWN">WITHDRAWN: the finder takes the listing down</option>
-      </select>
-    </label>
-    <label class="check"><input type="checkbox" name="confirm" value="yes" required> I understand this closes the item for everyone</label>
-    <button class="danger">Close item</button>
-  </form>
-</section>
-{% endif %}
+    <section class="card">
+      <h2>Timeline</h2>
+      <ol class="timeline">
+      {% for e in timeline %}
+        <li>
+          {{ ui.event_tile(e.event_type) }}
+          <div>
+            <strong>{{ EVENT_TEXT.get(e.event_type, e.event_type) }}</strong>{% if e.event_type == "item_closed" %}: {{ REASON_TEXT[e.detail.split()[-1]] }}{% endif %}
+            <div class="muted small">by <span class="actor">{{ e.actor }}</span> · <time>{{ e.created_at }}</time></div>
+            {% if is_staff and e.detail %}<div class="detail">{{ e.detail }}</div>{% endif %}
+          </div>
+        </li>
+      {% endfor %}
+      </ol>
+    </section>
 
-{% if user and user.role == "admin" and item.status == "resolved" %}
-<section class="card">
-  <h2>Reopen (administrator)</h2>
-  <form method="post" action="/items/{{ item.id }}/reopen">
-    <label>Justification <input name="justification" required></label>
-    <button>Reopen item</button>
-  </form>
-</section>
-{% endif %}
+    {% if is_staff and item.status == "active" %}
+    <section class="card danger-zone">
+      <h2>{{ ui.icon("triangle-alert") }} Withdraw this item</h2>
+      <form method="post" action="/items/{{ item.id }}/close">
+        <label>Reason code
+          <select name="reason" required>
+            <option value="">Choose…</option>
+            <option value="WITHDRAWN">WITHDRAWN: the finder takes the listing down</option>
+          </select>
+        </label>
+        <label class="check"><input type="checkbox" name="confirm" value="yes" required> I understand this closes the item for everyone</label>
+        <button class="danger">Close item</button>
+      </form>
+    </section>
+    {% endif %}
 
-<section class="card">
-  <h2>Timeline</h2>
-  <ol class="timeline">
-  {% for e in timeline %}
-    <li><time>{{ e.created_at }}</time> <strong>{{ EVENT_TEXT.get(e.event_type, e.event_type) }}</strong>
-      by <span class="actor">{{ e.actor }}</span>
-      {% if e.event_type == "item_closed" %}: {{ REASON_TEXT[e.detail.split()[-1]] }}{% endif %}
-      {% if is_staff and e.detail %}<div class="muted">{{ e.detail }}</div>{% endif %}</li>
-  {% endfor %}
-  </ol>
-</section>
+    {% if user and user.role == "admin" and item.status == "resolved" %}
+    <section class="card">
+      <h2>{{ ui.icon("rotate-ccw") }} Reopen (administrator)</h2>
+      <form method="post" action="/items/{{ item.id }}/reopen">
+        <label>Justification <input name="justification" required></label>
+        <button>Reopen item</button>
+      </form>
+    </section>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}

@@ -1,0 +1,93 @@
+{# Small reusable pieces. Import with: {% import "_ui.html" as ui %} #}
+
+{% macro icon(name, cls="") -%}
+<svg class="i {{ cls }}" aria-hidden="true" focusable="false"><use href="/static/icons/sprite.svg#{{ name }}"></use></svg>
+{%- endmacro %}
+
+{# Each category gets a line icon and a pastel tile colour. #}
+{% set CATEGORY_LOOK = {
+  "bag": ("backpack", "lavender"), "bottle": ("milk", "blue"), "clothing": ("shirt", "peach"),
+  "electronics": ("smartphone", "blue"), "glasses": ("glasses", "mint"), "id_card": ("id-card", "peach"),
+  "jewellery": ("gem", "pink"), "keys": ("key-round", "yellow"), "stationery": ("pen-line", "mint"),
+  "umbrella": ("umbrella", "lavender"), "wallet": ("wallet", "pink"), "other": ("package", "grey"),
+} %}
+
+{% macro cat_tile(category, size="") -%}
+{% set look = CATEGORY_LOOK.get(category, ("package", "grey")) %}
+<span class="tile-icon {{ look[1] }} {{ size }}">{{ icon(look[0]) }}</span>
+{%- endmacro %}
+
+{% macro nice(value) -%}{{ (value or "")|replace("_", " ")|capitalize }}{%- endmacro %}
+
+{# Claim states: short label, colour and icon. Plain language only (NFR-USE-001). #}
+{% set STATE_LOOK = {
+  "PENDING": ("Received", "blue", "inbox"),
+  "VERIFYING": ("In progress", "lavender", "circle-help"),
+  "VERIFIED": ("Verified", "mint", "shield-check"),
+  "MANUAL_REVIEW": ("Under review", "peach", "hourglass"),
+  "DISPUTED": ("Under review", "peach", "hourglass"),
+  "REJECTED": ("Not accepted", "pink", "circle-x"),
+  "EXPIRED": ("Timed out", "grey", "clock"),
+  "CLOSED": ("Returned", "lime", "circle-check"),
+  "CLOSED_ITEM_RESOLVED": ("No longer available", "grey", "archive"),
+} %}
+
+{% macro state_badge(state, withdrawn=false) -%}
+{% set look = STATE_LOOK[state] %}
+{% if withdrawn %}{% set look = ("Withdrawn", "grey", "undo-2") %}{% endif %}
+<span class="pill {{ look[1] }}">{{ icon(look[2]) }}{{ look[0] }}</span>
+{%- endmacro %}
+
+{% macro state_tile(state) -%}
+{% set look = STATE_LOOK[state] %}
+<span class="tile-icon {{ look[1] }}">{{ icon(look[2]) }}</span>
+{%- endmacro %}
+
+{% macro item_status(item) -%}
+{% if item.status == "active" %}
+<span class="pill mint">{{ icon("circle-check") }}Open</span>
+{% else %}
+<span class="pill grey">{{ icon("archive") }}Closed: {{ REASON_TEXT[item.closure_reason] }}</span>
+{% endif %}
+{%- endmacro %}
+
+{# Timeline: one icon per event type. #}
+{% set EVENT_LOOK = {
+  "item_registered": ("package-plus", "lime"), "claim_filed": ("hand", "blue"),
+  "challenge_sent": ("play", "lavender"), "challenge_issued": ("circle-help", "lavender"),
+  "challenge_answered": ("message-square", "lavender"), "verification_scored": ("list-checks", "lavender"),
+  "score_pass": ("shield-check", "mint"), "score_fail": ("circle-x", "pink"), "timeout": ("clock", "grey"),
+  "contested": ("scale", "peach"), "budget_exhausted": ("gauge", "peach"),
+  "admin_approve": ("user-cog", "mint"), "admin_reject": ("user-cog", "pink"),
+  "admin_resolve_approve": ("user-cog", "mint"), "admin_resolve_reject": ("user-cog", "pink"),
+  "admin_justification": ("file-text", "grey"), "claimant_withdraws": ("undo-2", "grey"),
+  "handover_confirmed": ("handshake", "mint"), "handoff_done": ("circle-check", "lime"),
+  "item_resolved_elsewhere": ("archive", "grey"), "item_closed": ("archive", "grey"),
+  "item_reopened": ("rotate-ccw", "blue"), "attribute_replaced": ("pencil", "peach"),
+} %}
+
+{% macro event_tile(event_type) -%}
+{% set look = EVENT_LOOK.get(event_type, ("info", "grey")) %}
+<span class="tile-icon {{ look[1] }} sm">{{ icon(look[0]) }}</span>
+{%- endmacro %}
+
+{# Friendly empty state. #}
+{% macro empty(icon_name, title, text, href=None, action=None) -%}
+<div class="empty">
+  <span class="tile-icon lavender lg">{{ icon(icon_name) }}</span>
+  <p class="empty-title">{{ title }}</p>
+  <p class="muted">{{ text }}</p>
+  {% if href %}<a class="button" href="{{ href }}">{{ action }}</a>{% endif %}
+</div>
+{%- endmacro %}
+
+{# Circular gauge, staff only: used / allowance of the item disclosure budget. #}
+{% macro gauge(used, allowance) -%}
+{% set pct = ((allowance - used) / allowance * 100) if allowance else 0 %}
+<div class="gauge" style="--pct: {{ pct|round(1) }}">
+  <svg viewBox="0 0 36 36" aria-hidden="true">
+    <circle class="gauge-track" cx="18" cy="18" r="15.9"></circle>
+    <circle class="gauge-fill" cx="18" cy="18" r="15.9" pathLength="100"></circle>
+  </svg>
+  <div class="gauge-text"><strong>{{ allowance - used }}</strong><span>of {{ allowance }} left</span></div>
+</div>{%- endmacro %}

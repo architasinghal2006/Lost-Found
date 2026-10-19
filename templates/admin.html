@@ -1,49 +1,65 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
 {% block content %}
-<h1>Admin</h1>
-<p class="muted">You see verdicts, similarity scores and budgets. Private answers are never shown, here or anywhere.</p>
+<div class="page-head"><h1>Admin</h1></div>
+<p class="notice">{{ ui.icon("eye-off") }}<span>You see verdicts, similarity scores and budgets. Private answers are never shown, here or anywhere.</span></p>
 
-<section class="card">
-  <h2>Waiting for a decision</h2>
+<div class="stats three">
+  <div class="stat"><span class="tile-icon peach">{{ ui.icon("hourglass") }}</span><span class="muted">Waiting</span><strong>{{ queue|length }}</strong></div>
+  <div class="stat"><span class="tile-icon lavender">{{ ui.icon("inbox") }}</span><span class="muted">All claims</span><strong>{{ claims|length }}</strong></div>
+  <div class="stat"><span class="tile-icon mint">{{ ui.icon("package") }}</span><span class="muted">Open items</span><strong>{{ items|selectattr("status", "equalto", "active")|list|length }}</strong></div>
+</div>
+
+<section>
+  <div class="section-head"><h2>Waiting for a decision</h2></div>
+  <div class="queue">
   {% for c in queue %}
-    <div class="claim">
-      <p><strong>Claim #{{ c.id }}</strong> on <a href="/items/{{ c.item_id }}">{{ c.public_description }}</a>
-        by <span class="actor">{{ c.claimant }}</span> · <code>{{ c.state }}</code>
-        {% if c.score is not none %} · score {{ "%.2f"|format(c.score) }}{% endif %}</p>
-      <form method="post" action="/admin/claims/{{ c.id }}/decide" class="row">
-        <input name="justification" placeholder="Justification (required)" required>
-        <button name="decision" value="approve">Approve</button>
-        <button name="decision" value="reject" class="danger">Reject</button>
+    <article class="card claim">
+      <div class="claim-top">
+        {{ ui.state_tile(c.state) }}
+        <div class="lrow-text">
+          <strong>Claim #{{ c.id }} · <a href="/items/{{ c.item_id }}">{{ c.public_description }}</a></strong>
+          <span class="muted">by <span class="actor">{{ c.claimant }}</span> · <code>{{ c.state }}</code></span>
+        </div>
+        {% if c.score is not none %}<span class="score">{{ "%.2f"|format(c.score) }}<small>score</small></span>{% endif %}
+      </div>
+      <form method="post" action="/admin/claims/{{ c.id }}/decide" class="decide">
+        <input name="justification" placeholder="Justification (required)" aria-label="Justification" required>
+        <button name="decision" value="approve">{{ ui.icon("check") }}Approve</button>
+        <button name="decision" value="reject" class="danger">{{ ui.icon("x") }}Reject</button>
       </form>
-    </div>
+    </article>
   {% else %}
-    <p class="muted">Nothing waiting.</p>
+    <div class="card">{{ ui.empty("list-checks", "All clear", "Nothing is waiting for a decision.") }}</div>
   {% endfor %}
+  </div>
 </section>
 
 <section class="card">
   <h2>All claims</h2>
   <div class="scroll">
-  <table>
-    <tr><th>#</th><th>Item</th><th>Claimant</th><th>State</th><th>Score</th><th>Spent</th><th>Questions (cost · similarity)</th><th>Handover</th></tr>
+  <table class="stack">
+    <thead><tr><th>#</th><th>Item</th><th>Claimant</th><th>State</th><th>Score</th><th>Spent</th><th>Questions (cost · similarity)</th><th>Handover</th></tr></thead>
     {% for c in claims %}
     <tr>
-      <td>{{ c.id }}</td>
-      <td><a href="/items/{{ c.item_id }}">{{ c.public_description }}</a></td>
-      <td><span class="actor">{{ c.claimant }}</span></td>
-      <td><code>{{ c.state }}</code>{% if c.closure_cause %}<br><small>{{ c.closure_cause }}</small>{% endif %}</td>
-      <td>{% if c.score is not none %}{{ "%.2f"|format(c.score) }}{% endif %}</td>
-      <td>{{ c.claim_spent }}</td>
-      <td>{% for q in c.questions %}
-            <div>{{ q.question_text }} · {{ q.disclosure_cost }} ·
-              {% if q.similarity is not none %}{{ "%.2f"|format(q.similarity) }} {{ "✔" if q.matched else "✘" }}{% else %}unanswered{% endif %}</div>
+      <td data-label="#">{{ c.id }}</td>
+      <td data-label="Item"><a href="/items/{{ c.item_id }}">{{ c.public_description }}</a></td>
+      <td data-label="Claimant"><span class="actor">{{ c.claimant }}</span></td>
+      <td data-label="State">{{ ui.state_badge(c.state, c.closure_cause == "CLAIMANT_WITHDRAWN") }}<br><code>{{ c.state }}</code>{% if c.closure_cause %}<br><small>{{ c.closure_cause }}</small>{% endif %}</td>
+      <td data-label="Score">{% if c.score is not none %}{{ "%.2f"|format(c.score) }}{% endif %}</td>
+      <td data-label="Spent">{{ c.claim_spent }}</td>
+      <td data-label="Questions">{% for q in c.questions %}
+            <div class="qline">{{ q.question_text }} · {{ q.disclosure_cost }} ·
+              {% if q.similarity is not none %}{{ "%.2f"|format(q.similarity) }}
+                {% if q.matched %}<span class="yes">{{ ui.icon("check") }}<span class="visually-hidden">match</span></span>{% else %}<span class="no">{{ ui.icon("x") }}<span class="visually-hidden">no match</span></span>{% endif %}
+              {% else %}<span class="muted">unanswered</span>{% endif %}</div>
           {% endfor %}</td>
-      <td>{% if c.state == "VERIFIED" %}
+      <td data-label="Handover">{% if c.state == "VERIFIED" %}
             claimant {{ "✔" if c.claimant_confirmed else "…" }} / finder {{ "✔" if c.finder_confirmed_by else "…" }}
             {% if not c.finder_confirmed_by %}
             <form method="post" action="/claims/{{ c.id }}/confirm">
               <label class="check"><input type="checkbox" name="confirm" value="yes" required> on finder's behalf</label>
-              <button>Confirm</button>
+              <button class="small">Confirm</button>
             </form>
             {% endif %}
           {% endif %}</td>
@@ -54,17 +70,20 @@
 </section>
 
 <section class="card">
-  <h2>Items and budgets</h2>
-  <form method="post" action="/admin/sweep"><button>Run expiry sweep now</button>
-    {% if swept %}<span class="muted">{{ swept }} item(s) expired.</span>{% endif %}</form>
+  <div class="section-head">
+    <h2>Items and budgets</h2>
+    <form method="post" action="/admin/sweep" class="inline"><button class="ghost small">{{ ui.icon("clock") }}Run expiry sweep now</button></form>
+  </div>
+  {% if swept %}<p class="notice">{{ ui.icon("info") }}<span>{{ swept }} item(s) expired.</span></p>{% endif %}
   <div class="scroll">
-  <table>
-    <tr><th>#</th><th>Item</th><th>Status</th><th>Budget used</th><th>Frozen at</th></tr>
+  <table class="stack">
+    <thead><tr><th>#</th><th>Item</th><th>Status</th><th>Budget used</th><th>Frozen at</th></tr></thead>
     {% for i in items %}
-    <tr><td>{{ i.id }}</td><td><a href="/items/{{ i.id }}">{{ i.public_description }}</a></td>
-        <td>{{ "Open" if i.status == "active" else REASON_TEXT[i.closure_reason] }}</td>
-        <td>{{ i.consumed_total }} / {{ i.allowance }}</td>
-        <td>{% if i.frozen %}{{ i.frozen_value }}{% endif %}</td></tr>
+    {% set pct = (i.consumed_total / i.allowance * 100) if i.allowance else 0 %}
+    <tr><td data-label="#">{{ i.id }}</td><td data-label="Item"><a href="/items/{{ i.id }}">{{ i.public_description }}</a></td>
+        <td data-label="Status">{{ ui.item_status(i) }}</td>
+        <td data-label="Budget used"><span class="minibar {{ 'full' if pct >= 100 }}"><span style="width: {{ pct|round(0) }}%"></span></span> {{ i.consumed_total }} / {{ i.allowance }}</td>
+        <td data-label="Frozen at">{% if i.frozen %}{{ i.frozen_value }}{% endif %}</td></tr>
     {% endfor %}
   </table>
   </div>

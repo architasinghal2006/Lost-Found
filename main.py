@@ -107,8 +107,17 @@ def require_admin(user=Depends(require_user)):
     return user
 
 
+STYLESHEET = os.path.join("static", "style.css")
+
+
+def static_version():
+    # Cache-busting: the stylesheet's modification time, read on every page, so an edit changes the URL.
+    return int(os.path.getmtime(STYLESHEET))
+
+
 def render(request, name, user, status_code=200, **context):
-    return templates.TemplateResponse(request, name, {"user": user, **context}, status_code=status_code)
+    return templates.TemplateResponse(request, name, {"user": user, "static_version": static_version(), **context},
+                                      status_code=status_code)
 
 
 def redirect(url):

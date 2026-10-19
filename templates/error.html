@@ -1,6 +1,13 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
 {% block content %}
-<h1>Sorry</h1>
-<p class="error">{{ message }}</p>
-<p><a href="javascript:history.back()">Go back</a> · <a href="/">Home</a></p>
+<div class="auth error-page">
+  <span class="tile-icon peach xl">{{ ui.icon("triangle-alert") }}</span>
+  <h1>Sorry, that didn't work</h1>
+  <p class="error">{{ message }}</p>
+  <div class="actions">
+    <a class="button ghost" href="javascript:history.back()">{{ ui.icon("arrow-left") }}Go back</a>
+    <a class="button" href="/">{{ ui.icon("house") }}Home</a>
+  </div>
+</div>
 {% endblock %}

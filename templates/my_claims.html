@@ -1,12 +1,22 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
 {% block content %}
-<h1>My claims</h1>
-<ul class="list">
-{% for c in claims %}
-  <li><a href="/claims/{{ c.id }}"><img src="/uploads/{{ c.photo_path }}" alt=""> {{ c.public_description }}</a>
-    <span class="badge">{{ c.title }}</span></li>
+<div class="page-head"><h1>My claims</h1></div>
+<div class="narrow-col">
+{% if claims %}
+  <ul class="rows">
+  {% for c in claims %}
+    <li><a class="lrow" href="/claims/{{ c.id }}">
+      <img class="thumb" src="/uploads/{{ c.photo_path }}" alt="">
+      <span class="lrow-text"><strong>{{ c.public_description }}</strong>
+        <span class="muted">{{ c.title }}</span></span>
+      {{ ui.state_badge(c.state) }}
+      {{ ui.icon("chevron-right", "chev") }}
+    </a></li>
+  {% endfor %}
+  </ul>
 {% else %}
-  <li class="muted">You have not claimed anything yet.</li>
-{% endfor %}
-</ul>
+  {{ ui.empty("inbox", "No claims yet", "Lost something? Search for it, and claim it when you spot it.", "/#search", "Search found items") }}
+{% endif %}
+</div>
 {% endblock %}

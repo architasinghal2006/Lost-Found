@@ -1,11 +1,48 @@
+# Python
 __pycache__/
 *.pyc
+.venv/
+venv/
 .pytest_cache/
+
+# Secrets
+.env
+*.env
+!.env.example
+
+# Runtime data: SQLite databases (incl. seed.py's lostfound.db.bak backup and journals), mail outbox,
+# uploaded item photos (default static/uploads, LF_UPLOADS), Docker instance folder, evaluation output
 *.db
+*.db.bak
 *.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+outbox/
 static/uploads/
 data/uploads/
-results/
-.venv/
-.claude/
 instance/
+results/
+
+# Large files: CLIP / model weights and the ABO distractor images (passed to evaluate.py --distractors)
+*.pt
+*.pth
+*.bin
+*.safetensors
+models/
+abo/
+abo_images/
+data/abo*/
+
+# Editor / OS / tooling
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+.claude/
+
+# Screenshots: only screenshots/after/ is kept, and not the outdated dark-theme set
+screenshots/*
+!screenshots/after/
+screenshots/after/dark/

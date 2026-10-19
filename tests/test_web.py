@@ -1,3 +1,4 @@
+import os
 import re
 
 import pytest
@@ -168,3 +169,14 @@ def test_claim_endpoint_is_rate_limited(app_db):
     ids = [report_item(finder) for _ in range(main.claim_limiter.max_calls + 1)]
     codes = [fraud.post(f"/items/{i}/claim").status_code for i in ids]
     assert codes[-1] == 429 and all(c == 200 for c in codes[:-1])
+
+
+def test_stylesheet_link_carries_file_mtime_version(app_db, tmp_path, monkeypatch):
+    # Cache-busting: the ?v= value is the CSS file's modification time, so editing the file changes the URL.
+    css = tmp_path / "style.css"
+    css.write_text("body {}")
+    monkeypatch.setattr(main, "STYLESHEET", str(css))
+    os.utime(css, (1_700_000_000, 1_700_000_000))
+    assert '/static/style.css?v=1700000000"' in client_for(None).get("/login").text
+    os.utime(css, (1_700_000_500, 1_700_000_500))
+    assert '/static/style.css?v=1700000500"' in client_for(None).get("/login").text

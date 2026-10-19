@@ -77,6 +77,25 @@ There are 357 tests. They need no network and no GPU (NFR-MNT-006). Notable ones
 | `tests/test_claims.py`, `tests/test_closure.py` | Budgets, verdict bands, T7, T11, handover, cascade, freeze, idempotency, atomicity under injected faults, reopen |
 | `tests/test_web.py` | Walks every page as every role and asserts no private answer is ever rendered; admin routes return 403 for normal users |
 
+## Data not in this repo
+
+Large or third-party data is kept out of git (see `.gitignore`). Get it yourself as follows.
+
+- **CLIP weights (ViT-B/32, OpenAI weights through `open_clip`, about 350 MB).**
+  - You don't need to download them by hand. Install the CLIP requirements (next section), then run
+    `python -c "import embedder; embedder.ClipEmbedder()"` once with internet access.
+  - The weights are cached in your user profile, outside this folder, and later runs load them offline.
+  - Without them the app runs on the stub embedder.
+- **ABO distractor images** (Amazon Berkeley Objects, CC BY 4.0), used only by `python evaluate.py scale`.
+  - Download `abo-images-small.tar` from https://amazon-berkeley-objects.s3.amazonaws.com/index.html and unpack it.
+  - It unpacks into many nested folders, but `evaluate.py` reads only the top level of the folder you pass it.
+    So copy about 2,500 `.jpg` files into one flat folder, for example `D:\abo_images`. Then run
+    `python evaluate.py scale --distractors D:\abo_images`.
+  - Keep that folder outside the repo, or name it `abo_images/`, which is ignored.
+- **The SQLite database and uploaded photos** are created locally by `python seed.py` and are never committed.
+
+Email alert configuration (`MAIL_BACKEND` and the SMTP settings) will be documented here when that feature is built.
+
 ## Switching on real CLIP
 
 CLIP ViT-B/32 runs on the CPU through `open_clip`. **It has not been tested in this build environment**; see

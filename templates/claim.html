@@ -1,51 +1,91 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{# The claimant sees plain-language state and the next step only (UI-010, FR-089). #}
 {% block content %}
-<article class="card item">
-  <img class="photo small" src="/uploads/{{ item.photo_path }}" alt="Photo of the claimed item">
-  <div>
-    <p class="muted"><a href="/items/{{ item.id }}">{{ item.public_description }}</a></p>
-    <h1>{{ claim.title }}</h1>
-    <p>{{ claim.next_step }}</p>
-    {% if claim.withdrawn %}<p class="muted">You withdrew this claim.</p>{% endif %}
+{% set failed = claim.state in ("REJECTED", "EXPIRED", "CLOSED_ITEM_RESOLVED") %}
+{% set reached = {"PENDING": 1, "VERIFYING": 1, "MANUAL_REVIEW": 1, "DISPUTED": 1, "VERIFIED": 2, "CLOSED": 4}.get(claim.state, 1) %}
+<div class="page-head">
+  <a class="icon-btn" href="/my/claims" aria-label="Back to my claims">{{ ui.icon("chevron-left") }}</a>
+  <span class="muted">My claim</span>
+</div>
+
+<div class="split">
+  <div class="split-main">
+    <article class="card claim-head">
+      <img class="thumb lg" src="/uploads/{{ item.photo_path }}" alt="Photo of the claimed item">
+      <div>
+        <a class="muted" href="/items/{{ item.id }}">{{ item.public_description }}</a>
+        <h1>{{ claim.title }}</h1>
+        {{ ui.state_badge(claim.state, claim.withdrawn) }}
+      </div>
+    </article>
+    <p class="next-step">{{ ui.icon("info") }}<span>{{ claim.next_step }}{% if claim.withdrawn %} You withdrew this claim.{% endif %}</span></p>
+
+    <ol class="steps" aria-label="Claim progress">
+      {% for label in ("Claimed", "Verify", "Handover", "Returned") %}
+        {% set n = loop.index %}
+        {% if n <= reached %}{% set cls = "done" %}
+        {% elif n == reached + 1 and failed %}{% set cls = "stopped" %}
+        {% elif n == reached + 1 %}{% set cls = "current" %}
+        {% else %}{% set cls = "" %}{% endif %}
+        <li class="{{ cls }}" {% if cls == "current" %}aria-current="step"{% endif %}>
+          <span class="dot">{% if cls == "done" %}{{ ui.icon("check") }}{% elif cls == "stopped" %}{{ ui.icon("x") }}{% else %}{{ n }}{% endif %}</span>
+          <span>{{ label }}</span>
+        </li>
+      {% endfor %}
+    </ol>
   </div>
-</article>
 
-{% if claim.state == "PENDING" %}
-<form method="post" action="/claims/{{ claim.id }}/start" class="card">
-  <p>We will ask questions about details that were never published. Answer from memory; small spelling slips are fine.</p>
-  <button>Start verification</button>
-</form>
-{% endif %}
+  <div class="split-side">
+    {% if claim.state == "PENDING" %}
+    <form method="post" action="/claims/{{ claim.id }}/start" class="card qcard">
+      <span class="tile-icon lavender">{{ ui.icon("shield-check") }}</span>
+      <h2>Prove it's yours</h2>
+      <p>We will ask questions about details that were never published. Answer from memory; small spelling slips are fine.</p>
+      <button class="wide">{{ ui.icon("play") }}Start verification</button>
+    </form>
+    {% endif %}
 
-{% if claim.question %}
-<form method="post" action="/claims/{{ claim.id }}/answer" class="card">
-  <p class="question">{{ claim.question.question_text }}</p>
-  <input type="hidden" name="challenge_id" value="{{ claim.question.id }}">
-  <input name="answer" autocomplete="off" autofocus placeholder="Your answer">
-  <button>Submit answer</button>
-</form>
-{% endif %}
+    {% if claim.question %}
+    <form method="post" action="/claims/{{ claim.id }}/answer" class="card qcard">
+      <span class="tile-icon lavender">{{ ui.icon("circle-help") }}</span>
+      <span class="eyebrow">Private detail</span>
+      <p class="question">{{ claim.question.question_text }}</p>
+      <input type="hidden" name="challenge_id" value="{{ claim.question.id }}">
+      <label class="visually-hidden" for="answer">Your answer</label>
+      <input id="answer" name="answer" autocomplete="off" autofocus placeholder="Your answer">
+      <p class="muted small">Answer from memory. Small spelling slips are fine.</p>
+      <button class="wide">Submit answer {{ ui.icon("chevron-right") }}</button>
+    </form>
+    {% endif %}
 
-{% if claim.state == "VERIFIED" %}
-<section class="card">
-  <h2>Handover</h2>
-  <p>You: {{ "confirmed ✔" if claim.claimant_confirmed else "not yet confirmed" }} ·
-     Finder: {{ "confirmed ✔" if claim.finder_confirmed else "not yet confirmed" }}</p>
-  {% if not claim.claimant_confirmed %}
-  <form method="post" action="/claims/{{ claim.id }}/confirm">
-    <label class="check"><input type="checkbox" name="confirm" value="yes" required> I have received my item</label>
-    <button>Confirm handover</button>
-  </form>
-  {% elif not claim.finder_confirmed %}
-    <p class="notice">Waiting for the finder to confirm.</p>
-  {% endif %}
-</section>
-{% endif %}
+    {% if claim.state == "VERIFIED" %}
+    <section class="card">
+      <h2>{{ ui.icon("handshake") }} Handover</h2>
+      <div class="handover">
+        <span class="hand {{ 'done' if claim.claimant_confirmed }}">{{ ui.icon("circle-check" if claim.claimant_confirmed else "clock") }}You: {{ "confirmed" if claim.claimant_confirmed else "not yet confirmed" }}</span>
+        <span class="hand {{ 'done' if claim.finder_confirmed }}">{{ ui.icon("circle-check" if claim.finder_confirmed else "clock") }}Finder: {{ "confirmed" if claim.finder_confirmed else "not yet confirmed" }}</span>
+      </div>
+      {% if not claim.claimant_confirmed %}
+      <form method="post" action="/claims/{{ claim.id }}/confirm">
+        <label class="check"><input type="checkbox" name="confirm" value="yes" required> I have received my item</label>
+        <button class="wide">{{ ui.icon("circle-check") }}Confirm handover</button>
+      </form>
+      {% elif not claim.finder_confirmed %}
+        <div class="notice">{{ ui.icon("hourglass") }}<p>Waiting for the finder to confirm.</p></div>
+      {% endif %}
+    </section>
+    {% endif %}
 
-{% if claim.state in ("PENDING", "VERIFYING") %}
-<form method="post" action="/claims/{{ claim.id }}/withdraw" class="card">
-  <label class="check"><input type="checkbox" name="confirm" value="yes" required> Withdraw my claim (it cannot be reopened)</label>
-  <button class="danger">Withdraw claim</button>
-</form>
-{% endif %}
+    {% if claim.state in ("PENDING", "VERIFYING") %}
+    <details class="card withdraw">
+      <summary>{{ ui.icon("undo-2") }}Withdraw this claim</summary>
+      <form method="post" action="/claims/{{ claim.id }}/withdraw">
+        <label class="check"><input type="checkbox" name="confirm" value="yes" required> Withdraw my claim (it cannot be reopened)</label>
+        <button class="danger">Withdraw claim</button>
+      </form>
+    </details>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}

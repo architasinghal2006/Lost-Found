@@ -1,32 +1,63 @@
+{% import "_ui.html" as ui %}
+{% set path = request.url.path %}
+{% set searching = path == "/" and request.query_params.get("q") %}
+{% macro tab(href, icon_name, label, active) -%}
+<a href="{{ href }}" class="{{ 'active' if active }}" {% if active %}aria-current="page"{% endif %}>{{ ui.icon(icon_name) }}<span>{{ label }}</span></a>
+{%- endmacro %}
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#F6F7F9">
   <title>{% block title %}Lost &amp; Found{% endblock %}</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="manifest" href="/static/manifest.json">
+  <link rel="icon" type="image/png" href="/static/icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="/static/style.css?v={{ static_version }}">
 </head>
 <body>
 <header class="topbar">
-  <a class="brand" href="/">Lost &amp; Found</a>
-  <nav>
-    <a href="/">Search</a>
+  <a class="brand" href="/"><img src="/static/icons/icon-192.png" alt="" width="32" height="32"> Lost &amp; Found</a>
+  <nav class="topnav" aria-label="Main">
+    {{ tab("/", "house", "Home", path == "/" and not searching) }}
+    {{ tab("/#search", "search", "Search", searching) }}
     {% if user %}
-      <a href="/items/new">Report item</a>
-      <a href="/my/items">My items</a>
-      <a href="/my/claims">My claims</a>
-      {% if user.role == "admin" %}<a href="/admin">Admin</a>{% endif %}
-      <form method="post" action="/logout" class="inline">
-        <button class="link">Log out ({{ user.username }})</button>
-      </form>
-    {% else %}
-      <a href="/login">Log in</a>
-      <a href="/register">Register</a>
+      {{ tab("/items/new", "circle-plus", "Report item", path == "/items/new") }}
+      {{ tab("/my/items", "package", "My items", path == "/my/items") }}
+      {{ tab("/my/claims", "inbox", "My claims", path.startswith("/my/claims") or path.startswith("/claims")) }}
+      {% if user.role == "admin" %}{{ tab("/admin", "shield", "Admin", path == "/admin") }}{% endif %}
     {% endif %}
   </nav>
+  <div class="topbar-user">
+    {% if user %}
+      <span class="chip">{{ ui.icon("user") }}{{ user.username }}</span>
+      <form method="post" action="/logout" class="inline">
+        <button class="ghost small">{{ ui.icon("log-out") }}Log out</button>
+      </form>
+    {% else %}
+      <a class="button ghost small" href="/login">{{ ui.icon("log-in") }}Log in</a>
+      <a class="button small" href="/register">Register</a>
+    {% endif %}
+  </div>
 </header>
+
 <main>
 {% block content %}{% endblock %}
 </main>
+
+<nav class="tabbar" aria-label="Main">
+  {{ tab("/", "house", "Home", path == "/" and not searching) }}
+  {{ tab("/#search", "search", "Search", searching) }}
+  {{ tab("/items/new", "circle-plus", "Report", path == "/items/new") }}
+  {{ tab("/my/claims", "inbox", "Claims", path.startswith("/my/claims") or path.startswith("/claims")) }}
+  {% if user %}
+    {{ tab("/my/items", "user", "Profile", path == "/my/items") }}
+    {% if user.role == "admin" %}{{ tab("/admin", "shield", "Admin", path == "/admin") }}{% endif %}
+  {% else %}
+    {{ tab("/login", "log-in", "Log in", path in ("/login", "/register")) }}
+  {% endif %}
+</nav>
 </body>
 </html>

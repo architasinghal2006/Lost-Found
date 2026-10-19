@@ -1,13 +1,37 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
 {% block content %}
-<h1>Items I found</h1>
-<p><a class="button" href="/items/new">Report a found item</a></p>
-<ul class="list">
-{% for item in items %}
-  <li><a href="/items/{{ item.id }}"><img src="/uploads/{{ item.photo_path }}" alt=""> {{ item.public_description }}</a>
-    <span class="badge">{{ "Open" if item.status == "active" else REASON_TEXT[item.closure_reason] }}</span></li>
-{% else %}
-  <li class="muted">You have not reported anything yet.</li>
-{% endfor %}
-</ul>
+<div class="page-head"><h1>Profile</h1></div>
+<div class="narrow-col">
+  <section class="card profile">
+    <span class="avatar" aria-hidden="true">{{ user.username[:1]|upper }}</span>
+    <div class="lrow-text">
+      <strong>{{ user.username }}</strong>
+      <span class="muted">{{ "Administrator" if user.role == "admin" else "Campus member" }}</span>
+    </div>
+    <form method="post" action="/logout" class="inline">
+      <button class="ghost small">{{ ui.icon("log-out") }}Log out</button>
+    </form>
+  </section>
+
+  <a class="dashed-card" href="/items/new">{{ ui.icon("circle-plus") }}Report a found item</a>
+
+  <div class="section-head"><h2>Items I found</h2><span class="muted">{{ items|length }}</span></div>
+  {% if items %}
+  <ul class="rows">
+  {% for item in items %}
+    <li><a class="lrow" href="/items/{{ item.id }}">
+      <img class="thumb" src="/uploads/{{ item.photo_path }}" alt="">
+      <span class="lrow-text"><strong>{{ item.public_description }}</strong>
+        <span class="muted">{{ ui.nice(item.category) }} · {{ ui.nice(item.zone) }}</span></span>
+      {% if item.status == "active" %}<span class="pill mint">{{ ui.icon("circle-check") }}Open</span>
+      {% else %}<span class="pill grey">{{ ui.icon("archive") }}{{ REASON_TEXT[item.closure_reason] }}</span>{% endif %}
+      {{ ui.icon("chevron-right", "chev") }}
+    </a></li>
+  {% endfor %}
+  </ul>
+  {% else %}
+    {{ ui.empty("package", "You have not reported anything yet", "Found something on campus? Snap a photo and register it in a minute.") }}
+  {% endif %}
+</div>
 {% endblock %}

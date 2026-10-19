@@ -1,10 +1,16 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
 {% block content %}
-<h1>Create an account</h1>
-<form method="post" action="/register" class="card narrow">
-  {% if error %}<p class="error">{{ error }}</p>{% endif %}
-  <label>Username <input name="username" autocomplete="username" required></label>
-  <label>Password (6+ characters) <input type="password" name="password" autocomplete="new-password" required></label>
-  <button>Register</button>
-</form>
+<div class="auth">
+  <img src="/static/icons/icon-192.png" alt="" width="64" height="64" class="auth-logo">
+  <h1>Create an account</h1>
+  <p class="muted">It takes ten seconds. You need one to claim or report an item.</p>
+  <form method="post" action="/register" class="card">
+    {% if error %}<div class="error-box">{{ ui.icon("triangle-alert") }}<p class="error">{{ error }}</p></div>{% endif %}
+    <label>Username <input name="username" autocomplete="username" required></label>
+    <label>Password (6+ characters) <input type="password" name="password" autocomplete="new-password" required></label>
+    <button class="wide">{{ ui.icon("user-plus") }}Register</button>
+    <p class="muted center">Already registered? <a href="/login">Log in</a></p>
+  </form>
+</div>
 {% endblock %}
